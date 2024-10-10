@@ -71,13 +71,40 @@ public class Namer : MonoBehaviour
         {
             Output(new InvalidChemicalException("This compound is too big!"));
             return;
-        }
+        }        
+        NumberRing(_ring);
+        Output("Cyclo" + STANDARD_PREFIXES[_ring.Count - 1] + GetCycloCompoundBody(_ring));
+    }
+
+    private void NumberRing(List<Carbon> _ring)
+    {
+        Carbon[] _sortedCarbons = new Carbon[_ring.Count];
+        int _sortedSize = 0;
+
         foreach (Carbon _carbon in _ring)
         {
-            _carbon.Evaluate(_ring);
+            _sortedCarbons[_sortedSize] = _carbon;
+            SortUp(_sortedCarbons, _sortedSize);
+            _sortedSize++;
         }
-        //number ring
-        Output("Cyclo" + STANDARD_PREFIXES[_ring.Count - 1] + GetCycloCompoundBody(_ring));
+
+        _sortedCarbons[0].SetChainNumber(1);
+        
+    }
+
+    private void SortUp(Carbon[] _sortedCarbons, int _index)
+    {
+        if (_index == 0)
+        {
+            return;
+        }
+        if (_sortedCarbons[_index].CompareTo(_sortedCarbons[(_index - 1) / 2]) > 0)
+        {
+            Carbon _temp = _sortedCarbons[_index];
+            _sortedCarbons[_index] = _sortedCarbons[(_index - 1) / 2];
+            _sortedCarbons[(_index - 1) / 2] = _temp;
+            SortUp(_sortedCarbons, (_index - 1) / 2);
+        }
     }
 
     private string GetCycloCompoundBody(List<Carbon> _ring)

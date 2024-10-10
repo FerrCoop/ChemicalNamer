@@ -1,8 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Carbon : Atom
+public class Carbon : Atom, IComparable<Carbon>
 {
     public int ChainNumber {get; private set;}
     public override int MAX_BONDS { get { return 4; } }
@@ -117,5 +118,19 @@ public class Carbon : Atom
             }
         }
         return _connectedCarbons;
+    }
+
+    public int CompareTo(Carbon _other)
+    {
+        if (_other == this)
+        {
+            return 0;
+        }
+        if (_other.functionalGroups == null && this.functionalGroups == null)
+        {
+            //both unevaluated
+            return 0;
+        }
+        return 0;
     }
 }
