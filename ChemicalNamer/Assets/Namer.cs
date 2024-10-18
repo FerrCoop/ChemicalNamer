@@ -71,7 +71,13 @@ public class Namer : MonoBehaviour
         {
             Output(new InvalidChemicalException("This compound is too big!"));
             return;
-        }        
+        }
+        
+        foreach (Carbon _carbon in _ring)
+        {
+            _carbon.Evaluate(_ring);
+        }
+
         NumberRing(_ring);
         Output("Cyclo" + STANDARD_PREFIXES[_ring.Count - 1] + GetCycloCompoundBody(_ring));
     }
@@ -79,17 +85,19 @@ public class Namer : MonoBehaviour
     private void NumberRing(List<Carbon> _ring)
     {
         Carbon[] _sortedCarbons = new Carbon[_ring.Count];
-        int _sortedSize = 0;
 
-        foreach (Carbon _carbon in _ring)
+        //add carbons to heap and sort up
+        for (int i = 0; i < _ring.Count; i++)
         {
-            _sortedCarbons[_sortedSize] = _carbon;
-            SortUp(_sortedCarbons, _sortedSize);
-            _sortedSize++;
+            _sortedCarbons[i] = _ring[i];
+            SortUp(_sortedCarbons, i);
         }
 
         _sortedCarbons[0].SetChainNumber(1);
-        
+        //remove 0 from heap
+        //keep removing until find a neighbor of carbon 1
+        //that's 2
+        //figure out how to number rest of circle
     }
 
     private void SortUp(Carbon[] _sortedCarbons, int _index)
@@ -247,6 +255,7 @@ public class Namer : MonoBehaviour
     private HashSet<Atom> AddConnectedAtoms(Atom _atom, Atom _origin, HashSet<Atom> _connectedAtoms, out CovalentBond _cyclical)
     {
         _cyclical = null;
+        Debug.Log(_cyclical);
         foreach (CovalentBond _bond in _atom.bondedAtoms)
         {
             Atom _other = _bond.GetOtherAtom(_atom);
