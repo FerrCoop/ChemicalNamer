@@ -90,28 +90,52 @@ public class Namer : MonoBehaviour
         for (int i = 0; i < _ring.Count; i++)
         {
             _sortedCarbons[i] = _ring[i];
-            SortUp(_sortedCarbons, i);
+            SortUp(_sortedCarbons, i, true);
         }
 
-        _sortedCarbons[0].SetChainNumber(1);
-        //remove 0 from heap
-        //keep removing until find a neighbor of carbon 1
-        //that's 2
-        //figure out how to number rest of circle
+        Carbon _currentCarbon = _sortedCarbons[0];
+        _currentCarbon.SetChainNumber(1);
+        List<Carbon> _neighbors = _currentCarbon.GetConnectedCarbons();
+        _sortedCarbons = new Carbon[_neighbors.Count];
+        int _size = 0;
+        for (int i = 0; i < _neighbors.Count; i++)
+        {
+            if (_ring.Contains(_neighbors[i]))
+            {
+                _sortedCarbons[_size] = _neighbors[i];
+                SortUp(_sortedCarbons, _size, true);
+                _size++;
+            }
+        }
+        _currentCarbon = _sortedCarbons[0];
+        _currentCarbon.SetChainNumber(2);
+        int _count = 3;
+        while (_count <= _ring.Count)
+        {
+            foreach(Carbon _carbon in _currentCarbon.GetConnectedCarbons())
+            {
+                if (_carbon.ChainNumber != 0 && _ring.Contains(_carbon))
+                {
+                    _carbon.SetChainNumber(_count);
+                    _count++;
+                    break;
+                }
+            }
+        }
     }
 
-    private void SortUp(Carbon[] _sortedCarbons, int _index)
+    private void SortUp(Carbon[] _sortedCarbons, int _index, bool _cyclo)
     {
         if (_index == 0)
         {
             return;
         }
-        if (_sortedCarbons[_index].CompareTo(_sortedCarbons[(_index - 1) / 2]) > 0)
+        if (_sortedCarbons[_index].CompareTo(_sortedCarbons[(_index - 1) / 2], _cyclo) > 0)
         {
             Carbon _temp = _sortedCarbons[_index];
             _sortedCarbons[_index] = _sortedCarbons[(_index - 1) / 2];
             _sortedCarbons[(_index - 1) / 2] = _temp;
-            SortUp(_sortedCarbons, (_index - 1) / 2);
+            SortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
         }
     }
 

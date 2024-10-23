@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Carbon : Atom, IComparable<Carbon>
+public class Carbon : Atom
 {
     public int ChainNumber {get; private set;}
     public override int MAX_BONDS { get { return 4; } }
@@ -120,11 +120,26 @@ public class Carbon : Atom, IComparable<Carbon>
         return _connectedCarbons;
     }
 
-    public int CompareTo(Carbon _other)
+    public int CompareTo(Carbon _other, bool _cyclocarbon)
     {
         if (_other == this)
         {
             return 0;
+        }
+        if(_cyclocarbon)
+        {
+            if (unsaturation > _other.unsaturation)
+            {
+                return 1;
+            }
+            else if (_other.unsaturation > unsaturation)
+            {
+                return -1;
+            }
+            else
+            {
+                return 0;
+            }
         }
         if (_other.functionalGroups == null && this.functionalGroups == null)
         {
