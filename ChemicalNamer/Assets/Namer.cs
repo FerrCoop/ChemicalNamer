@@ -24,7 +24,7 @@ public class Namer : MonoBehaviour
 
         HashSet<Atom> _compoundAtoms = new();
         _compoundAtoms.Add(_origin);
-        if (AddConnectedAtoms(_origin, null, _compoundAtoms, out CovalentBond _cyclical) == null)
+        if (AddConnectedAtoms(_origin, null, _compoundAtoms, null, out CovalentBond _cyclical) == null)
         {
             Output(new InvalidChemicalException("Chemical Has More Than One Ring"));
             return;
@@ -112,15 +112,28 @@ public class Namer : MonoBehaviour
         int _count = 3;
         while (_count <= _ring.Count)
         {
+            bool _counted = false;
             foreach(Carbon _carbon in _currentCarbon.GetConnectedCarbons())
             {
-                if (_carbon.ChainNumber != 0 && _ring.Contains(_carbon))
+                if (_carbon.ChainNumber == 0 && _ring.Contains(_carbon))
                 {
                     _carbon.SetChainNumber(_count);
+                    Debug.Log("Setting: " + _count + "   Count: " + _ring.Count);
+                    _currentCarbon = _carbon;
+                    _counted = true;
                     _count++;
                     break;
                 }
             }
+            if(!_counted)
+            {
+                Debug.LogError("Cant Find Connected Carbon");
+                break;
+            }
+        }
+        foreach (Carbon _carbon in _ring)
+        {
+            Debug.Log(_carbon.ChainNumber);
         }
     }
 
@@ -135,7 +148,10 @@ public class Namer : MonoBehaviour
             Carbon _temp = _sortedCarbons[_index];
             _sortedCarbons[_index] = _sortedCarbons[(_index - 1) / 2];
             _sortedCarbons[(_index - 1) / 2] = _temp;
-            SortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
+            if (_index != 0)
+            {
+                SortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
+            }           
         }
     }
 
@@ -276,9 +292,9 @@ public class Namer : MonoBehaviour
         Output(new InvalidChemicalException("Sorry, that chemical is too complicated"));
     }
 
-    private HashSet<Atom> AddConnectedAtoms(Atom _atom, Atom _origin, HashSet<Atom> _connectedAtoms, out CovalentBond _cyclical)
+    private HashSet<Atom> AddConnectedAtoms(Atom _atom, Atom _origin, HashSet<Atom> _connectedAtoms, CovalentBond _currentCyclical, out CovalentBond _cyclical)
     {
-        _cyclical = null;
+        _cyclical = _currentCyclical;
         Debug.Log(_cyclical);
         foreach (CovalentBond _bond in _atom.bondedAtoms)
         {
@@ -301,7 +317,7 @@ public class Namer : MonoBehaviour
                 _cyclical = _bond;
                 continue;
             }
-            if (AddConnectedAtoms(_other, _atom, _connectedAtoms, out _cyclical) == null)
+            if (AddConnectedAtoms(_other, _atom, _connectedAtoms, _cyclical, out _cyclical) == null)
             {
                 return null;
             }
