@@ -9,6 +9,7 @@ public class Namer : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nameTextObject;
 
     private string[] STANDARD_PREFIXES = {"Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca"};
+    private string[] NUMERICAL_PREFIXES = { "", "di", "tri", "quadra", "pent", "hex", "hept", "oct", "non", "deca", "hendeca", "dodeca" };
     const string ALKANE_SUFFIX = "an", ALKENE_SUFFIX = "en", ALKYNE_SUFFIX = "yn";
     const string AMINO_SUFFIX = "amine", AMINO_PREFIX = "amino";
 
@@ -73,24 +74,22 @@ public class Namer : MonoBehaviour
             return;
         }
         
+        //reset and evaluate carbons
         foreach (Carbon _carbon in _ring)
         {
+            _carbon.SetChainNumber(0);
             _carbon.Evaluate(_ring);
         }
 
         NumberRing(_ring);
-        Output("Cyclo" + STANDARD_PREFIXES[_ring.Count - 1] + GetCycloCompoundBody(_ring));
+        Output(GetFunctionalGroups(_ring) + "Cyclo" + STANDARD_PREFIXES[_ring.Count - 1] + GetCycloCompoundBody(_ring));
     }
 
     private void NumberRing(List<Carbon> _ring)
     {
-        foreach(Carbon _carbon in _ring)
-        {
-            _carbon.SetChainNumber(0);
-        }
         Carbon[] _sortedCarbons = new Carbon[_ring.Count];
 
-        //add carbons to heap and sort up
+        //reset each carbon's number, add to heap and sort up
         for (int i = 0; i < _ring.Count; i++)
         {
             _sortedCarbons[i] = _ring[i];
@@ -158,6 +157,13 @@ public class Namer : MonoBehaviour
                 SortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
             }           
         }
+    }
+
+    private string GetFunctionalGroups(List<Carbon> _ring)
+    {
+        string _body = "";
+        //do stuff
+        return _body;
     }
 
     private string GetCycloCompoundBody(List<Carbon> _ring)
