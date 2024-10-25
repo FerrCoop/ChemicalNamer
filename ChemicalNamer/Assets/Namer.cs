@@ -84,6 +84,10 @@ public class Namer : MonoBehaviour
 
     private void NumberRing(List<Carbon> _ring)
     {
+        foreach(Carbon _carbon in _ring)
+        {
+            _carbon.SetChainNumber(0);
+        }
         Carbon[] _sortedCarbons = new Carbon[_ring.Count];
 
         //add carbons to heap and sort up
@@ -108,6 +112,7 @@ public class Namer : MonoBehaviour
             }
         }
         _currentCarbon = _sortedCarbons[0];
+        Debug.Log("Setting Chain Number to two!");
         _currentCarbon.SetChainNumber(2);
         int _count = 3;
         while (_count <= _ring.Count)
