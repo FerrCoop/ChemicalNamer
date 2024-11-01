@@ -6,7 +6,8 @@ using UnityEngine;
 public class Carbon : Atom
 {
     public int ChainNumber {get; private set;}
-    public override int MAX_BONDS { get { return 4; } }
+
+    public override int MAX_BONDS { get { return 4; } }   
 
     public List<FunctionalGroup> functionalGroups;
     public Unsaturation unsaturation;
@@ -18,6 +19,7 @@ public class Carbon : Atom
         Ketone,
         Hydroxyl,
         Amino,
+        Alkanyl
     }
 
     public enum Unsaturation
@@ -25,12 +27,23 @@ public class Carbon : Atom
         Saturated,
         Alkene,
         Alkyne,
-    }    
+    }
+    
+    public CovalentBond GetUnsaturatedBond()
+    {
+        foreach (CovalentBond _bond in bondedAtoms)
+        {
+            if (_bond.BondTier > 1)
+            {
+                return _bond;
+            }
+        }
+        return null;
+    }
 
     public void Evaluate(List<Carbon> _chain)
     {
-        functionalGroups = new();
-        unsaturation = new();
+        functionalGroups = new List<FunctionalGroup>();
         List<CovalentBond> _oxygens = new();
         foreach (CovalentBond _bond in bondedAtoms)
         {
@@ -60,6 +73,8 @@ public class Carbon : Atom
             }
         }
         GetOxygenFunctionalGroups(_oxygens);
+        functionalGroups.Sort();
+        functionalGroups.Reverse();
     }
 
     private void GetOxygenFunctionalGroups(List<CovalentBond> _oxygens)
@@ -120,32 +135,48 @@ public class Carbon : Atom
         return _connectedCarbons;
     }
 
-    public int CompareTo(Carbon _other, bool _cyclocarbon)
+    public List<Carbon> GetConnectedCarbons(List<Carbon> _chain)
     {
-        if (_other == this)
+        List<Carbon> _connectedCarbons = new();
+        foreach (CovalentBond _bond in bondedAtoms)
         {
-            return 0;
+            if (_bond.GetOtherAtom(this).GetType() != typeof(Carbon))
+            {
+                continue;
+            }
+            Carbon _other = (Carbon)_bond.GetOtherAtom(this);
+            if (_other != null && _chain.Contains(_other))
+            {
+                _connectedCarbons.Add(_other);
+            }
         }
-        if(_cyclocarbon)
+        return _connectedCarbons;
+    }
+
+    public int CompareFunctionalGroups(Carbon _other)
+    {
+        int _compNum = 0;
+        while (true)
         {
-            if (unsaturation > _other.unsaturation)
-            {
-                return 1;
-            }
-            else if (_other.unsaturation > unsaturation)
-            {
-                return -1;
-            }
-            else
+            if (functionalGroups.Count ==_compNum && _other.functionalGroups.Count == _compNum)
             {
                 return 0;
             }
-        }
-        if (_other.functionalGroups == null && this.functionalGroups == null)
-        {
-            //both unevaluated
-            return 0;
-        }
-        return 0;
+            else if (functionalGroups.Count == _compNum)
+            {
+                return -1;
+            }
+            else if (_other.functionalGroups.Count == _compNum)
+            {
+                return 1;
+            }
+
+            if ((int)functionalGroups[_compNum] != (int)_other.functionalGroups[_compNum])
+            {
+                return -1 * ((int)functionalGroups[0] - (int)_other.functionalGroups[0]);
+            }
+
+            _compNum++;
+        }        
     }
 }

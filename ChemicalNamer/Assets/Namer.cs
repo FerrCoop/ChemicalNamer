@@ -8,11 +8,12 @@ public class Namer : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI nameTextObject;
 
-    private string[] STANDARD_PREFIXES = {"Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca"};
-    private string[] NUMERICAL_PREFIXES = { "", "di", "tri", "quadra", "pent", "hex", "hept", "oct", "non", "deca", "hendeca", "dodeca" };
-    const string ALKANE_SUFFIX = "an", ALKENE_SUFFIX = "en", ALKYNE_SUFFIX = "yn";
+    public string[] STANDARD_PREFIXES = {"Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca"};
+    public string[] NUMERICAL_PREFIXES = { "", "di", "tri", "quadra", "pent", "hex", "hept", "oct", "non", "deca", "hendeca", "dodeca" };
+    public const string ALKANE_SUFFIX = "an", ALKENE_SUFFIX = "en", ALKYNE_SUFFIX = "yn";
     const string AMINO_SUFFIX = "amine", AMINO_PREFIX = "amino";
 
+    //initial function, directs to HandleCyclo or HandleLinear
     public void TryNameCompound()
     {
         Atom _origin = FindAnyObjectByType<Atom>();
@@ -40,194 +41,16 @@ public class Namer : MonoBehaviour
         //Get Compound Type
         if (_cyclical != null)
         {
-            HandleCycloCompound(_compoundAtoms, _cyclical);
+            Ring _ring = new Ring(GetRing(_compoundAtoms, _cyclical), this);
+            _ring.Evaluate();
         }
         else
         {
             HandleLinearCompound();
         } 
     }
-
-    private void Output(string _name)
-    {
-        nameTextObject.color = Color.white;
-        nameTextObject.text = _name;
-    }
-
-    private void Output(InvalidChemicalException _invalidException)
-    {
-        nameTextObject.color = Color.red;
-        nameTextObject.text = _invalidException.reason;
-    }
     
-    private void HandleCycloCompound(HashSet<Atom> _atoms, CovalentBond _cyclicalBond)
-    {
-        List<Carbon> _ring = GetRing(_atoms, _cyclicalBond);
-        if(_ring == null)
-        {
-            Output(new InvalidChemicalException("Non-carbon atom in ring structure"));
-            return;
-        }
-        else if (_ring.Count > STANDARD_PREFIXES.Length)
-        {
-            Output(new InvalidChemicalException("This compound is too big!"));
-            return;
-        }
-        
-        //reset and evaluate carbons
-        foreach (Carbon _carbon in _ring)
-        {
-            _carbon.SetChainNumber(0);
-            _carbon.Evaluate(_ring);
-        }
-
-        NumberRing(_ring);
-        Output(GetFunctionalGroups(_ring) + "Cyclo" + STANDARD_PREFIXES[_ring.Count - 1] + GetCycloCompoundBody(_ring));
-    }
-
-    private void NumberRing(List<Carbon> _ring)
-    {
-        Carbon[] _sortedCarbons = new Carbon[_ring.Count];
-
-        //reset each carbon's number, add to heap and sort up
-        for (int i = 0; i < _ring.Count; i++)
-        {
-            _sortedCarbons[i] = _ring[i];
-            SortUp(_sortedCarbons, i, true);
-        }
-
-        Carbon _currentCarbon = _sortedCarbons[0];
-        _currentCarbon.SetChainNumber(1);
-        List<Carbon> _neighbors = _currentCarbon.GetConnectedCarbons();
-        _sortedCarbons = new Carbon[_neighbors.Count];
-        int _size = 0;
-        for (int i = 0; i < _neighbors.Count; i++)
-        {
-            if (_ring.Contains(_neighbors[i]))
-            {
-                _sortedCarbons[_size] = _neighbors[i];
-                SortUp(_sortedCarbons, _size, true);
-                _size++;
-            }
-        }
-        _currentCarbon = _sortedCarbons[0];
-        Debug.Log("Setting Chain Number to two!");
-        _currentCarbon.SetChainNumber(2);
-        int _count = 3;
-        while (_count <= _ring.Count)
-        {
-            bool _counted = false;
-            foreach(Carbon _carbon in _currentCarbon.GetConnectedCarbons())
-            {
-                if (_carbon.ChainNumber == 0 && _ring.Contains(_carbon))
-                {
-                    _carbon.SetChainNumber(_count);
-                    Debug.Log("Setting: " + _count + "   Count: " + _ring.Count);
-                    _currentCarbon = _carbon;
-                    _counted = true;
-                    _count++;
-                    break;
-                }
-            }
-            if(!_counted)
-            {
-                Debug.LogError("Cant Find Connected Carbon");
-                break;
-            }
-        }
-        foreach (Carbon _carbon in _ring)
-        {
-            Debug.Log(_carbon.ChainNumber);
-        }
-    }
-
-    private void SortUp(Carbon[] _sortedCarbons, int _index, bool _cyclo)
-    {
-        if (_index == 0)
-        {
-            return;
-        }
-        if (_sortedCarbons[_index].CompareTo(_sortedCarbons[(_index - 1) / 2], _cyclo) > 0)
-        {
-            Carbon _temp = _sortedCarbons[_index];
-            _sortedCarbons[_index] = _sortedCarbons[(_index - 1) / 2];
-            _sortedCarbons[(_index - 1) / 2] = _temp;
-            if (_index != 0)
-            {
-                SortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
-            }           
-        }
-    }
-
-    private string GetFunctionalGroups(List<Carbon> _ring)
-    {
-        string _body = "";
-        //do stuff
-        return _body;
-    }
-
-    private string GetCycloCompoundBody(List<Carbon> _ring)
-    {
-        string _body = "";
-        List<int> _doubleBonds = new(), _tripleBonds = new();
-        List<int> _hydroxyls = new();
-        foreach (Carbon _carbon in _ring)
-        {
-            if (_carbon.unsaturation == Carbon.Unsaturation.Alkene)
-            {
-                _doubleBonds.Add(_carbon.ChainNumber);
-            }
-            else if (_carbon.unsaturation == Carbon.Unsaturation.Alkyne)
-            {
-                _tripleBonds.Add(_carbon.ChainNumber);
-            }
-
-            if (_carbon.functionalGroups.Contains(Carbon.FunctionalGroup.Hydroxyl))
-            {
-                _hydroxyls.Add(_carbon.ChainNumber);
-            }            
-        }
-
-        if (_doubleBonds.Count + _tripleBonds.Count != 0)
-        {
-            if (_doubleBonds.Count >= 1)
-            {
-                _body += "-";
-                _doubleBonds.Sort();
-                _body += IntListToString(_doubleBonds) + ALKENE_SUFFIX;
-            }
-            if (_tripleBonds.Count >= 1)
-            {
-                _body += "-";
-                _tripleBonds.Sort();
-                _body += IntListToString(_tripleBonds) + ALKYNE_SUFFIX;
-            }
-        }
-        else
-        {
-            _body += ALKANE_SUFFIX;
-        }  
-
-        if (_hydroxyls.Count >= 1)
-        {
-            _body += "-";
-            _hydroxyls.Sort();
-            return _body + IntListToString(_hydroxyls) + "ol";
-        }
-        return _body + "e";
-    }
-
-    private string IntListToString(List<int> _list)
-    {
-        string _string = _list[0].ToString();
-        for (int i = 1; i < _list.Count; i++)
-        {
-            _string += ", " + _list[i];
-        }
-        _string += "-";
-        return _string;
-    }
-
+    //Start recursion to find ring
     private List<Carbon> GetRing(HashSet<Atom> _atoms, CovalentBond _cyclicalBond)
     {
         if (_cyclicalBond.AtomA.GetType() != typeof(Carbon) || _cyclicalBond.AtomB.GetType() != typeof(Carbon))
@@ -240,6 +63,7 @@ public class Namer : MonoBehaviour
         return _ring;
     }
 
+    //Recursively search through chemical to find ring
     private List<Carbon> SearchConnectedCarbons(Carbon _queriedCarbon, Carbon _origin, Carbon _target)
     {
         foreach (Carbon _carbon in _queriedCarbon.GetConnectedCarbons()) {
@@ -264,6 +88,7 @@ public class Namer : MonoBehaviour
         return null;
     }
 
+    //Get Unsaturation of a chain
     private HashSet<CovalentBond> GetUnsaturation(List<Carbon> _chain)
     {
         HashSet<CovalentBond> _chainUnsaturation = new();
@@ -284,6 +109,7 @@ public class Namer : MonoBehaviour
         return _chainUnsaturation;
     }
 
+    //TODO: Implement Later
     private void HandleLinearCompound()
     {
         //noncyclical: next step is find any functional groups
@@ -303,10 +129,10 @@ public class Namer : MonoBehaviour
         Output(new InvalidChemicalException("Sorry, that chemical is too complicated"));
     }
 
+    //Recursively Add Atoms
     private HashSet<Atom> AddConnectedAtoms(Atom _atom, Atom _origin, HashSet<Atom> _connectedAtoms, CovalentBond _currentCyclical, out CovalentBond _cyclical)
     {
         _cyclical = _currentCyclical;
-        Debug.Log(_cyclical);
         foreach (CovalentBond _bond in _atom.bondedAtoms)
         {
             Atom _other = _bond.GetOtherAtom(_atom);
@@ -336,12 +162,57 @@ public class Namer : MonoBehaviour
         return _connectedAtoms;
     }
 
-    private class InvalidChemicalException : System.Exception 
+    //Output a chemical name
+    public void Output(string _name)
     {
-        public string reason;
-        public InvalidChemicalException (string _reason)
+        nameTextObject.color = Color.white;
+        nameTextObject.text = _name;
+    }
+
+    //Output an error
+    public void Output(InvalidChemicalException _invalidException)
+    {
+        nameTextObject.color = Color.red;
+        nameTextObject.text = _invalidException.reason;
+    }
+
+    //take a bunch of indexes and convert to a string
+    public static string IntListToString(List<int> _list)
+    {
+        string _string = _list[0].ToString();
+        for (int i = 1; i < _list.Count; i++)
         {
-            reason = _reason;
+            _string += ", " + _list[i];
         }
+        _string += "-";
+        return _string;
+    }
+
+    //heap function to sort carbons
+    public static void FunctionalGroupSortUp(Carbon[] _sortedCarbons, int _index, bool _cyclo)
+    {
+        if (_index == 0)
+        {
+            return;
+        }
+        if (_sortedCarbons[_index].CompareFunctionalGroups(_sortedCarbons[(_index - 1) / 2]) > 0)
+        {
+            Carbon _temp = _sortedCarbons[_index];
+            _sortedCarbons[_index] = _sortedCarbons[(_index - 1) / 2];
+            _sortedCarbons[(_index - 1) / 2] = _temp;
+            if (_index != 0)
+            {
+                FunctionalGroupSortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
+            }
+        }
+    }
+}
+
+public class InvalidChemicalException : System.Exception
+{
+    public string reason;
+    public InvalidChemicalException(string _reason)
+    {
+        reason = _reason;
     }
 }

@@ -86,6 +86,27 @@ public class CovalentBond: MonoBehaviour
         return null;
     }
 
+    public int GetLowerAtomIndex()
+    {
+        Carbon carbonA = (Carbon)AtomA;
+        Carbon carbonB = (Carbon)AtomB;
+        if (carbonA == null || carbonB == null)
+        {
+            Debug.LogError("Non Double Carbon Bond");
+            return -1;
+        }
+        else if (Mathf.Abs(carbonA.ChainNumber - carbonB.ChainNumber) > 1)
+        {
+            Debug.LogError("");
+            return -1;
+        }
+        if (carbonA.ChainNumber < carbonB.ChainNumber)
+        {
+            return carbonA.ChainNumber;
+        }
+        return carbonB.ChainNumber;
+    }
+
     public bool Contains (Atom _atom)
     {
         return AtomA == _atom || AtomB == _atom;
