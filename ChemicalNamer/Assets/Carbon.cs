@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,7 +6,8 @@ using UnityEngine;
 public class Carbon : Atom
 {
     public int ChainNumber {get; private set;}
-    public override int MAX_BONDS { get { return 4; } }
+
+    public override int MAX_BONDS { get { return 4; } }   
 
     public List<FunctionalGroup> functionalGroups;
     public Unsaturation unsaturation;
@@ -17,6 +19,7 @@ public class Carbon : Atom
         Ketone,
         Hydroxyl,
         Amino,
+        Alkanyl
     }
 
     public enum Unsaturation
@@ -24,12 +27,30 @@ public class Carbon : Atom
         Saturated,
         Alkene,
         Alkyne,
-    }    
+    }
+
+    public void ResetValues()
+    {
+        unsaturation = Unsaturation.Saturated;
+        SetChainNumber(0);
+        functionalGroups = new List<FunctionalGroup>();
+    }
+
+    public CovalentBond GetUnsaturatedBond()
+    {
+        foreach (CovalentBond _bond in bondedAtoms)
+        {
+            if (_bond.BondTier > 1)
+            {
+                return _bond;
+            }
+        }
+        return null;
+    }
 
     public void Evaluate(List<Carbon> _chain)
     {
-        functionalGroups = new();
-        unsaturation = new();
+        functionalGroups = new List<FunctionalGroup>();
         List<CovalentBond> _oxygens = new();
         foreach (CovalentBond _bond in bondedAtoms)
         {
@@ -59,6 +80,8 @@ public class Carbon : Atom
             }
         }
         GetOxygenFunctionalGroups(_oxygens);
+        functionalGroups.Sort();
+        functionalGroups.Reverse();
     }
 
     private void GetOxygenFunctionalGroups(List<CovalentBond> _oxygens)
@@ -117,5 +140,85 @@ public class Carbon : Atom
             }
         }
         return _connectedCarbons;
+    }
+
+    public List<Carbon> GetConnectedCarbons(List<Carbon> _chain)
+    {
+        List<Carbon> _connectedCarbons = new();
+        foreach (CovalentBond _bond in bondedAtoms)
+        {
+            if (_bond.GetOtherAtom(this).GetType() != typeof(Carbon))
+            {
+                continue;
+            }
+            Carbon _other = (Carbon)_bond.GetOtherAtom(this);
+            if (_other != null && _chain.Contains(_other))
+            {
+                _connectedCarbons.Add(_other);
+            }
+        }
+        return _connectedCarbons;
+    }
+
+    public int CompareFunctionalGroups(Carbon _other)
+    {
+        int _compNum = 0;
+        while (true)
+        {
+            if (functionalGroups.Count ==_compNum && _other.functionalGroups.Count == _compNum)
+            {
+                return 0;
+            }
+            else if (functionalGroups.Count == _compNum)
+            {
+                return -1;
+            }
+            else if (_other.functionalGroups.Count == _compNum)
+            {
+                return 1;
+            }
+
+            if ((int)functionalGroups[_compNum] != (int)_other.functionalGroups[_compNum])
+            {
+                return -1 * ((int)functionalGroups[0] - (int)_other.functionalGroups[0]);
+            }
+
+            _compNum++;
+        }        
+    }
+
+    public int CompareFunctionalGroups(Carbon _other, Carbon _otherPrevious, Carbon _previous, List<Carbon> _ring)
+    {
+        int _comp = CompareFunctionalGroups(_other);
+        if (_comp != 0)
+        {
+            return _comp;
+        }
+        Carbon _nextCarbon = null, _nextOtherCarbon = null;
+        foreach (Carbon _carbon in GetConnectedCarbons(_ring))
+        {
+            if (_carbon != _previous)
+            {
+                _nextCarbon = _carbon;
+                break;
+            }
+        }
+        foreach (Carbon _carbon in _other.GetConnectedCarbons(_ring))
+        {
+            if (_carbon != _otherPrevious)
+            {
+                _nextOtherCarbon = _carbon;
+                break;
+            }
+        }
+        if (this == _nextOtherCarbon || _nextCarbon == _nextOtherCarbon)
+        {
+            return 0;
+        }
+        if (_nextCarbon != null)
+        {
+            return _nextCarbon.CompareFunctionalGroups(_nextOtherCarbon, _other, this, _ring);
+        }
+        return 0;
     }
 }
