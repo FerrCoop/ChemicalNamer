@@ -28,7 +28,14 @@ public class Carbon : Atom
         Alkene,
         Alkyne,
     }
-    
+
+    public void ResetValues()
+    {
+        unsaturation = Unsaturation.Saturated;
+        SetChainNumber(0);
+        functionalGroups = new List<FunctionalGroup>();
+    }
+
     public CovalentBond GetUnsaturatedBond()
     {
         foreach (CovalentBond _bond in bondedAtoms)
@@ -178,5 +185,40 @@ public class Carbon : Atom
 
             _compNum++;
         }        
+    }
+
+    public int CompareFunctionalGroups(Carbon _other, Carbon _otherPrevious, Carbon _previous, List<Carbon> _ring)
+    {
+        int _comp = CompareFunctionalGroups(_other);
+        if (_comp != 0)
+        {
+            return _comp;
+        }
+        Carbon _nextCarbon = null, _nextOtherCarbon = null;
+        foreach (Carbon _carbon in GetConnectedCarbons(_ring))
+        {
+            if (_carbon != _previous)
+            {
+                _nextCarbon = _carbon;
+                break;
+            }
+        }
+        foreach (Carbon _carbon in _other.GetConnectedCarbons(_ring))
+        {
+            if (_carbon != _otherPrevious)
+            {
+                _nextOtherCarbon = _carbon;
+                break;
+            }
+        }
+        if (this == _nextOtherCarbon || _nextCarbon == _nextOtherCarbon)
+        {
+            return 0;
+        }
+        if (_nextCarbon != null)
+        {
+            return _nextCarbon.CompareFunctionalGroups(_nextOtherCarbon, _other, this, _ring);
+        }
+        return 0;
     }
 }

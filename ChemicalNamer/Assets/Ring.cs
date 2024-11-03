@@ -38,7 +38,7 @@ public class Ring
         //reset and evaluate carbons
         foreach (Carbon _carbon in ring)
         {
-            _carbon.SetChainNumber(0);
+            _carbon.ResetValues();
             _carbon.Evaluate(ring);
 
             //Get Unsaturation
@@ -135,6 +135,21 @@ public class Ring
             }
             else
             {
+                int _complexCompared = _carbonA.CompareFunctionalGroups(_carbonB, _carbonA, _carbonB, ring);
+                if (_complexCompared > 0)
+                {
+                    //next functional is closer to A, so A is number 2
+                    _carbonA.SetChainNumber(2);
+                    _carbonB.SetChainNumber(1);
+                    FinishRing(_carbonA, 3);
+                }
+                else 
+                {
+                    //next functional is closer to B, so B is number 2 (or they're equal)
+                    _carbonB.SetChainNumber(2);
+                    _carbonA.SetChainNumber(1);
+                    FinishRing(_carbonB, 3);
+                }
                 //move through remainging carbons looking for next functional group
             }
             //make sure bond is actually in ring
@@ -173,7 +188,7 @@ public class Ring
         {
             if (doubleBonds.Count > 0)
             {
-                List<int> _doubleBondIndexes = new();
+                List<int> _doubleBondIndexes = new List<int>();
                 foreach (CovalentBond _bond in doubleBonds)
                 {
                     _doubleBondIndexes.Add(_bond.GetLowerAtomIndex());
