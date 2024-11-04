@@ -1,5 +1,3 @@
-using JetBrains.Annotations;
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -8,8 +6,9 @@ public class Namer : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI nameTextObject;
 
-    public string[] STANDARD_PREFIXES = {"Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca"};
+    public string[] STANDARD_PREFIXES = { "Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca" };
     public string[] NUMERICAL_PREFIXES = { "", "di", "tri", "quadra", "pent", "hex", "hept", "oct", "non", "deca", "hendeca", "dodeca" };
+    public string[] FUNCTIONAL_GROUP_ENDINGS = { "oic Acid", "al", "one", "ol", "amine"};
     public const string ALKANE_SUFFIX = "an", ALKENE_SUFFIX = "en", ALKYNE_SUFFIX = "yn";
     const string AMINO_SUFFIX = "amine", AMINO_PREFIX = "amino";
 
@@ -46,7 +45,7 @@ public class Namer : MonoBehaviour
         }
         else
         {
-            HandleLinearCompound();
+            HandleLinearCompound(_compoundAtoms);
         } 
     }
     
@@ -110,23 +109,71 @@ public class Namer : MonoBehaviour
     }
 
     //TODO: Implement Later
-    private void HandleLinearCompound()
+    private void HandleLinearCompound(HashSet<Atom> _atoms)
     {
         //noncyclical: next step is find any functional groups
-        //try find carboxyl
-        //try find aldehyde
-        //try find ketone
-        //try find hydroxyl
-        //try find amino
+        //get highest prio chain
+        //make sure it and substituent chains less than 12 carbons
+        //number chains
+        //name main chain
 
-        //no functional groups
-        //get unsaturation
+        List<Carbon> _endCarbons = new List<Carbon>();
+        
+        foreach(Atom _atom in _atoms)
+        {
+            if (_atom.GetType() != typeof(Carbon))
+            {
+                continue;
+            }
+            Carbon _carbon = (Carbon)_atom;
+            _carbon.Evaluate();
 
-        //get functional groups
-        //get unsaturation
-        //get longest carbon chain
-        //get end carbons, find path from each end carbon to each other end carbon, choose longest
-        Output(new InvalidChemicalException("Sorry, that chemical is too complicated"));
+            if(_carbon.GetConnectedCarbons().Count <= 1)
+            {
+                _endCarbons.Add(_carbon);
+            }
+        }
+
+        if(_endCarbons.Count == 1)
+        {
+            if (_endCarbons[0].functionalGroups.Count == 0)
+            {
+                Output("Methane");
+            }
+            else if (_endCarbons[0].functionalGroups.Count == 1)
+            {
+                Output("Methan" + FUNCTIONAL_GROUP_ENDINGS[(int)_endCarbons[0].functionalGroups[0]]);
+            }
+            else
+            {
+                //TODO: Multi functional methane
+                Output("Damn complicated methane that is");
+            }
+            return;
+        }
+
+        MainCandidate[] _candidates = new MainCandidate[GetCombinations(_endCarbons.Count)];
+        int _combinations = 0;
+        for (int i = 0; i < _endCarbons.Count; i++)
+        {
+            for (int k = i + 1; k < _endCarbons.Count; k++)
+            {
+                //add new combination _endCarbons[i], _endCarbons[k]
+                _candidates[_combinations] = new MainCandidate(_endCarbons[i], _endCarbons[k]);
+                _combinations++;
+                //TODO: sort up
+            }
+        }
+        List<Carbon> _mainChain = _candidates[0].GetChain();
+        LinearCompound _compound = new LinearCompound(_mainChain, this);
+        _endCarbons.Remove(_mainChain[0]);
+        _endCarbons.Remove(_mainChain[_mainChain.Count - 1]);
+        foreach (Carbon _carbon in _endCarbons)
+        {
+            //path from each end to a carbon in main
+            _compound.AddSubchain(_carbon.PathTo(_mainChain, null));
+        }
+        _compound.Evaluate();
     }
 
     //Recursively Add Atoms
@@ -205,6 +252,17 @@ public class Namer : MonoBehaviour
                 FunctionalGroupSortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
             }
         }
+    }
+
+    public static int GetCombinations(int _num)
+    {
+        int _combinations = 0;
+        while (_num > 0)
+        {
+            _num--;
+            _combinations += _num;
+        }
+        return _combinations;
     }
 }
 

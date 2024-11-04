@@ -38,7 +38,6 @@ public class Ring
         //reset and evaluate carbons
         foreach (Carbon _carbon in ring)
         {
-            _carbon.ResetValues();
             _carbon.Evaluate(ring);
 
             //Get Unsaturation
@@ -124,14 +123,14 @@ public class Ring
             {
                 _carbonA.SetChainNumber(1);
                 _carbonB.SetChainNumber(2);
-                FinishRing(_carbonB, 2);
+                FinishRing(_carbonB, 3);
 
             }
             else if (_compared < 0)
             {
                 _carbonB.SetChainNumber(1);
                 _carbonA.SetChainNumber(2);
-                FinishRing(_carbonA, 2);
+                FinishRing(_carbonA, 3);
             }
             else
             {

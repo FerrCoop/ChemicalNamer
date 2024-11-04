@@ -50,6 +50,7 @@ public class Carbon : Atom
 
     public void Evaluate(List<Carbon> _chain)
     {
+        ResetValues();
         functionalGroups = new List<FunctionalGroup>();
         List<CovalentBond> _oxygens = new();
         foreach (CovalentBond _bond in bondedAtoms)
@@ -66,6 +67,39 @@ public class Carbon : Atom
                     continue;
                 }                
                 /*TODO: Get Carbon Functional Groups*/
+            }
+            else if (_other.GetType() == typeof(Oxygen))
+            {
+                _oxygens.Add(_bond);
+            }
+            else if (_other.GetType() == typeof(Nitrogen))
+            {
+                if (_bond.BondTier == 1 && _other.bondedAtoms.Count == 1)
+                {
+                    functionalGroups.Add(FunctionalGroup.Amino);
+                }
+            }
+        }
+        GetOxygenFunctionalGroups(_oxygens);
+        functionalGroups.Sort();
+        functionalGroups.Reverse();
+    }
+
+    public void Evaluate()
+    {
+        ResetValues();
+        functionalGroups = new List<FunctionalGroup>();
+        List<CovalentBond> _oxygens = new();
+        foreach (CovalentBond _bond in bondedAtoms)
+        {
+            Atom _other = _bond.GetOtherAtom(this);
+            if (_other.GetType() == typeof(Carbon))
+            {
+                if (_bond.BondTier - 1 > (int)unsaturation - 1)
+                {
+                    unsaturation = (Unsaturation)(_bond.BondTier - 1);
+                }
+                /*TODO: Think about side chains*/
             }
             else if (_other.GetType() == typeof(Oxygen))
             {
@@ -220,5 +254,75 @@ public class Carbon : Atom
             return _nextCarbon.CompareFunctionalGroups(_nextOtherCarbon, _other, this, _ring);
         }
         return 0;
+    }
+
+    public List<Carbon> PathTo(Carbon _target, Carbon _previous)
+    {
+        foreach (Carbon _carbon in GetConnectedCarbons())
+        {
+            if (_carbon == _target)
+            {
+                List<Carbon> _chain = new List<Carbon>();
+                _chain.Add(_carbon);
+                _chain.Add(this);
+                return _chain;
+            }
+            if (_carbon != _previous)
+            {
+                List<Carbon> _testChain = _carbon.PathTo(_target, this);
+                if (_testChain != null)
+                {
+                    _testChain.Add(this);
+                    return _testChain;
+                }
+            }
+        }
+        return null;
+    }
+
+    public List<Carbon> PathTo(List<Carbon> _targetChain, Carbon _previous)
+    {
+        foreach (Carbon _carbon in GetConnectedCarbons())
+        {
+            if(_targetChain.Contains(_carbon))
+            {
+                List<Carbon> _chain = new List<Carbon>();
+                _chain.Add(_carbon);
+                _chain.Add(this);
+                return _chain;
+            }
+            if (_carbon != _previous)
+            {
+                List<Carbon> _testChain = _carbon.PathTo(_targetChain, this);
+                if(_testChain != null)
+                {
+                    _testChain.Add(this);
+                    return _testChain;
+                }
+            }            
+        }
+        return null;
+    }
+
+    public Unsaturation UnsaturationInChain(List<Carbon> _chain)
+    {
+        Unsaturation _greatestUnsaturation = Unsaturation.Saturated;
+        foreach (CovalentBond _bond in bondedAtoms)
+        {
+            if (_bond.BondTier <= (int)_greatestUnsaturation)
+            {
+                continue;
+            }
+            Atom _other = _bond.GetOtherAtom(this);
+            if (_other.GetType() != typeof(Carbon))
+            {
+                continue;
+            }
+            if (_chain.Contains((Carbon)_other))
+            {
+                _greatestUnsaturation = (Unsaturation)(_bond.BondTier - 1);
+            }
+        }
+        return _greatestUnsaturation;
     }
 }
