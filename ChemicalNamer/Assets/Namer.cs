@@ -164,8 +164,8 @@ public class Namer : MonoBehaviour
                 //TODO: sort up
             }
         }
-        List<Carbon> _mainChain = _candidates[0].GetChain();
-        LinearCompound _compound = new LinearCompound(_mainChain, this);
+        List<Carbon> _mainChain = _candidates[0].chain;
+        LinearCompound _compound = new LinearCompound(_candidates[0], this);
         _endCarbons.Remove(_mainChain[0]);
         _endCarbons.Remove(_mainChain[_mainChain.Count - 1]);
         foreach (Carbon _carbon in _endCarbons)

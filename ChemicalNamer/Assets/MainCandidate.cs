@@ -4,25 +4,38 @@ using UnityEngine;
 
 public class MainCandidate
 {
+    public List<Carbon> chain;
     public List<Carbon.FunctionalGroup> functionalGroups;
+    public Dictionary<Carbon.FunctionalGroup, List<Carbon>> functionalGroupDict;
     public List<Carbon.Unsaturation> unsaturation;
-
-    List<Carbon> chain;
-
+    
     public MainCandidate(Carbon _carbonA, Carbon _carbonB)
     {
         chain = _carbonA.PathTo(_carbonB, null);
         functionalGroups = new List<Carbon.FunctionalGroup>();
+        functionalGroupDict = new Dictionary<Carbon.FunctionalGroup, List<Carbon>>();
         unsaturation = new List<Carbon.Unsaturation>();
         foreach (Carbon _carbon in chain)
-        {           
-            functionalGroups.AddRange(_carbon.functionalGroups);
+        {
+            foreach (Carbon.FunctionalGroup _group in _carbon.functionalGroups)
+            {
+                functionalGroups.Add(_group);
+                if (functionalGroupDict.TryGetValue(_group, out List<Carbon> _list))
+                {
+                    _list.Add(_carbon);
+                }
+                else
+                {
+                    functionalGroupDict.Add(_group, new List<Carbon> { _carbon });
+                }
+            }
             Carbon.Unsaturation _unsaturation = _carbon.UnsaturationInChain(chain);
             if (_unsaturation != Carbon.Unsaturation.Saturated)
             {
                 unsaturation.Add(_carbon.unsaturation);
             }
         }
+        functionalGroups.Sort();
     }
 
     public int CompareTo(MainCandidate _other)
@@ -76,10 +89,5 @@ public class MainCandidate
                 return -1 * ((int)functionalGroups[i] - (int)_other.functionalGroups[i]);
             }
         }
-    }
-
-    public List<Carbon> GetChain()
-    {
-        return chain;
     }
 }

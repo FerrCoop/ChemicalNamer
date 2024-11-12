@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class LinearCompound
 {
-    private List<Carbon> main;
+    private MainCandidate main;
     private Namer namer;
 
-    public LinearCompound(List<Carbon> _main, Namer _namer)
+    public LinearCompound(MainCandidate _main, Namer _namer)
     {
         main = _main;
         namer = _namer;
@@ -25,23 +25,50 @@ public class LinearCompound
 
     public void Evaluate()
     {
-        if (main.Count > namer.STANDARD_PREFIXES.Length)
+        if (main.chain.Count > namer.STANDARD_PREFIXES.Length)
         {
             namer.Output(new InvalidChemicalException("Compound is too large!"));
             return;
         }
         NumberChain();
-        namer.Output(NamePrefixes() + namer.STANDARD_PREFIXES[main.Count - 1] + GetUnsaturation() + GetPrimaryFunctionalGroup());
+        Carbon.FunctionalGroup _primaryGroup = GetPrimaryFunctionalGroup();
+        namer.Output(NamePrefixes(_primaryGroup) + namer.STANDARD_PREFIXES[main.chain.Count - 1] + GetUnsaturation() + NamePrimaryFunctionalGroup(_primaryGroup));
     }
 
     private void NumberChain()
     {
+        Carbon _prioCarbon = null;
+
+        //heap
+        foreach (Carbon _carbon in main.chain)
+        {
+            
+        }
+
+        //find num from both sides
+        //choose lower
+        //if equal grab next carbon
 
     }
 
-    private string NamePrefixes()
+    private string NamePrefixes(Carbon.FunctionalGroup _primaryGroup)
     {
-        return "";
+        string _prefixes = "";
+        foreach (Carbon.FunctionalGroup _group in main.functionalGroupDict.Keys)
+        {
+            if (_group == _primaryGroup || main.functionalGroupDict[_group].Count == 0)
+            {
+                continue;
+            }
+            List<int> _indexes = new List<int>();
+            foreach (Carbon _carbon in main.functionalGroupDict[_group])
+            {
+                _indexes.Add(_carbon.ChainNumber);
+            }
+            //TODO: Alphabetize
+            _prefixes += Namer.IntListToString(_indexes) + namer.NUMERICAL_PREFIXES[_indexes.Count - 1];
+        }
+        return _prefixes;
     }
 
     private string GetUnsaturation()
@@ -50,7 +77,7 @@ public class LinearCompound
         HashSet<CovalentBond> _doubleBonds = new HashSet<CovalentBond>();
         HashSet<CovalentBond> _tripleBonds = new HashSet<CovalentBond>();
 
-        foreach (Carbon _carbon in main)
+        foreach (Carbon _carbon in main.chain)
         {
             CovalentBond _bond = _carbon.GetUnsaturatedBond();
             if (_bond == null || _bond.BondTier == 1)
@@ -58,7 +85,7 @@ public class LinearCompound
                 continue;
             }
             Atom _other = _bond.GetOtherAtom(_carbon);
-            if (_other.GetType() != typeof(Carbon) || !main.Contains((Carbon)_other))
+            if (_other.GetType() != typeof(Carbon) || !main.chain.Contains((Carbon)_other))
             {
                 continue;
             }
@@ -96,8 +123,35 @@ public class LinearCompound
         return _unsaturation;
     }
 
-    private string GetPrimaryFunctionalGroup()
+    private Carbon.FunctionalGroup GetPrimaryFunctionalGroup()
     {
-        return "";
+        int _primary = (int)Carbon.FunctionalGroup.Alkanyl;
+        if (main.functionalGroupDict.Count > 0)
+        {
+            //find primary functional group            
+            foreach (Carbon.FunctionalGroup _group in main.functionalGroupDict.Keys)
+            {
+                if ((int)_group < _primary)
+                {
+                    _primary = (int)_group;
+                }
+            }
+        }
+        return (Carbon.FunctionalGroup) _primary;
+    }
+
+    private string NamePrimaryFunctionalGroup(Carbon.FunctionalGroup _primaryGroup)
+    {
+        if (_primaryGroup == Carbon.FunctionalGroup.Alkanyl)
+        {
+            return "e";
+        }
+
+        List<int> _funcGroupIndexes = new List<int>();
+        foreach (Carbon _carbon in main.functionalGroupDict[_primaryGroup])
+        {
+            _funcGroupIndexes.Add(_carbon.ChainNumber);
+        }
+        return Namer.IntListToString(_funcGroupIndexes) + namer.FUNCTIONAL_GROUP_ENDINGS[(int)_primaryGroup];
     }
 }
