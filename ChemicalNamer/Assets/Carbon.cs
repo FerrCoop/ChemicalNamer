@@ -90,6 +90,7 @@ public class Carbon : Atom
         ResetValues();
         functionalGroups = new List<FunctionalGroup>();
         List<CovalentBond> _oxygens = new();
+        int _numCarbons = 0;
         foreach (CovalentBond _bond in bondedAtoms)
         {
             Atom _other = _bond.GetOtherAtom(this);
@@ -100,6 +101,11 @@ public class Carbon : Atom
                     unsaturation = (Unsaturation)(_bond.BondTier - 1);
                 }
                 /*TODO: Think about side chains*/
+                _numCarbons++;
+                if (_numCarbons > 2)
+                {
+                    functionalGroups.Add(FunctionalGroup.Alkanyl);
+                }                
             }
             else if (_other.GetType() == typeof(Oxygen))
             {

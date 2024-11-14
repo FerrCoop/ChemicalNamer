@@ -8,13 +8,17 @@ public class Namer : MonoBehaviour
 
     public string[] STANDARD_PREFIXES = { "Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca" };
     public string[] NUMERICAL_PREFIXES = { "", "di", "tri", "quadra", "pent", "hex", "hept", "oct", "non", "deca", "hendeca", "dodeca" };
+    public string[] FUNCTIONAL_PREFIXES = { "Carboxyl", "Formyl", "Oxo", "Hydroxyl", "Amino"};
     public string[] FUNCTIONAL_GROUP_ENDINGS = { "oic Acid", "al", "one", "ol", "amine"};
     public const string ALKANE_SUFFIX = "an", ALKENE_SUFFIX = "en", ALKYNE_SUFFIX = "yn";
     const string AMINO_SUFFIX = "amine", AMINO_PREFIX = "amino";
 
+    bool errorThrown = false;
+
     //initial function, directs to HandleCyclo or HandleLinear
     public void TryNameCompound()
     {
+        errorThrown = false;
         Atom _origin = FindAnyObjectByType<Atom>();
 
         if (_origin == null)
@@ -171,7 +175,7 @@ public class Namer : MonoBehaviour
         foreach (Carbon _carbon in _endCarbons)
         {
             //path from each end to a carbon in main
-            _compound.AddSubchain(_carbon.PathTo(_mainChain, null));
+            _compound.AddSidechain(_carbon.PathTo(_mainChain, null));
         }
         _compound.Evaluate();
     }
@@ -212,6 +216,10 @@ public class Namer : MonoBehaviour
     //Output a chemical name
     public void Output(string _name)
     {
+        if (errorThrown)
+        {
+            return;
+        }
         nameTextObject.color = Color.white;
         nameTextObject.text = _name;
     }
@@ -221,6 +229,7 @@ public class Namer : MonoBehaviour
     {
         nameTextObject.color = Color.red;
         nameTextObject.text = _invalidException.reason;
+        errorThrown = true;
     }
 
     //take a bunch of indexes and convert to a string
