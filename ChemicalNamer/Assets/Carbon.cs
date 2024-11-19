@@ -48,6 +48,7 @@ public class Carbon : Atom
         return null;
     }
 
+    //Cyclical Evaluate
     public void Evaluate(List<Carbon> _chain)
     {
         ResetValues();
@@ -85,6 +86,7 @@ public class Carbon : Atom
         functionalGroups.Reverse();
     }
 
+    //Linear Evaluate
     public void Evaluate()
     {
         ResetValues();
@@ -259,6 +261,21 @@ public class Carbon : Atom
         {
             return _nextCarbon.CompareFunctionalGroups(_nextOtherCarbon, _other, this, _ring);
         }
+        return 0;
+    }
+
+    public int LinearCompare(Carbon _other)
+    {
+        int _funcCompare = CompareFunctionalGroups(_other);
+        if (_funcCompare != 0)
+        {
+            return _funcCompare;
+        }
+        if((int)unsaturation != (int)_other.unsaturation)
+        {
+            return (int)unsaturation - (int)_other.unsaturation;
+        }
+        //TODO: next carbons
         return 0;
     }
 

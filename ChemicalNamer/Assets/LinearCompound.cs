@@ -43,7 +43,7 @@ public class LinearCompound
                 _namer.Output(new InvalidChemicalException("Branched sidechains are unsupported."));
             }
             CovalentBond _bond = _carbon.GetUnsaturatedBond();
-            if (_bond != null && (int)_bond.BondTier > (int)_unsaturation)
+            if (_bond != null && (int)_bond.BondTier > (int)_unsaturation && _bond.AtomA.GetType() == typeof(Carbon) && _bond.AtomB.GetType() == typeof(Carbon))
             {
                 _unsaturation = (Carbon.Unsaturation)(_bond.BondTier - 1);
             }
@@ -87,18 +87,49 @@ public class LinearCompound
 
     private void NumberChain()
     {
-        Carbon _prioCarbon = null;
-
-        //heap
+        Carbon[] _carbonHeap = new Carbon[main.chain.Count];
+        int _heapSize = 0;
+        
         foreach (Carbon _carbon in main.chain)
         {
-            
+            if(_carbon.functionalGroups.Count > 0 || _carbon.unsaturation != Carbon.Unsaturation.Saturated)
+            {
+                _carbonHeap[_heapSize] = _carbon;
+                _heapSize++;
+                //TODO Heap Up
+            }
         }
 
-        //find num from both sides
-        //choose lower
-        //if equal grab next carbon
+        while (_heapSize > 0)
+        {
+            Carbon _prioCarbon = _carbonHeap[0];
+            //TODO reheap down
+            int _numFromBeginning = main.chain[0].PathTo(_prioCarbon, null).Count, _numFromEnd = main.chain[main.chain.Count - 1].PathTo(_prioCarbon, null).Count;
+            if (_numFromBeginning < _numFromEnd)
+            {
+                //beginning is 1
+                for (int i = 1; i <= main.chain.Count; i++)
+                {
+                    main.chain[i - 1].SetChainNumber(i);
+                }
+                return;
+            }
+            else if (_numFromBeginning > _numFromEnd)
+            {
+                //end is 1
+                main.chain.Reverse();
+                for (int i = 1; i <= main.chain.Count; i++)
+                {
+                    main.chain[i - 1].SetChainNumber(i);
+                }
+                return;
+            }
+        }
 
+        for (int i = 1; i <= main.chain.Count; i++)
+        {
+            main.chain[i - 1].SetChainNumber(i);
+        }
     }
 
     private string NamePrefixes(Carbon.FunctionalGroup _primaryGroup)
