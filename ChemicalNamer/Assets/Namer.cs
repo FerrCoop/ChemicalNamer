@@ -138,6 +138,12 @@ public class Namer : MonoBehaviour
             }
         }
 
+        if (_endCarbons.Count == 0)
+        {
+            Output(new InvalidChemicalException("No carbons in compound!"));
+            return;
+        }    
+
         if(_endCarbons.Count == 1)
         {
             if (_endCarbons[0].functionalGroups.Count == 0)
@@ -166,17 +172,34 @@ public class Namer : MonoBehaviour
                 _candidates[_combinations] = new MainCandidate(_endCarbons[i], _endCarbons[k]);
                 _combinations++;
                 //TODO: sort up
+                int _index = _combinations - 1;
+                while (_index > 0)
+                {
+                    MainCandidate _parent = _candidates[(_index - 1) / 2];
+                    if (_candidates[_index].CompareTo(_parent) > 0)
+                    {
+                        _candidates[(_index - 1) / 2] = _candidates[_index];
+                        _candidates[_index] = _parent;
+                        _index = (_index - 1) / 2;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
         }
         List<Carbon> _mainChain = _candidates[0].chain;
         LinearCompound _compound = new LinearCompound(_candidates[0], this);
         _endCarbons.Remove(_mainChain[0]);
         _endCarbons.Remove(_mainChain[_mainChain.Count - 1]);
+
         foreach (Carbon _carbon in _endCarbons)
         {
             //path from each end to a carbon in main
             _compound.AddSidechain(_carbon.PathTo(_mainChain, null));
         }
+
         _compound.Evaluate();
     }
 
@@ -266,10 +289,11 @@ public class Namer : MonoBehaviour
     public static int GetCombinations(int _num)
     {
         int _combinations = 0;
+        _num--;
         while (_num > 0)
-        {
-            _num--;
+        {    
             _combinations += _num;
+            _num--;
         }
         return _combinations;
     }

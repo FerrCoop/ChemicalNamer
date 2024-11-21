@@ -81,6 +81,8 @@ public class LinearCompound
             return;
         }
         NumberChain();
+        //namer.Output("Safe to 84");
+        //return;
         Carbon.FunctionalGroup _primaryGroup = GetPrimaryFunctionalGroup();
         namer.Output(NamePrefixes(_primaryGroup) + namer.STANDARD_PREFIXES[main.chain.Count - 1] + GetUnsaturation() + NamePrimaryFunctionalGroup(_primaryGroup));
     }
@@ -89,21 +91,76 @@ public class LinearCompound
     {
         Carbon[] _carbonHeap = new Carbon[main.chain.Count];
         int _heapSize = 0;
-        
+
         foreach (Carbon _carbon in main.chain)
         {
             if(_carbon.functionalGroups.Count > 0 || _carbon.unsaturation != Carbon.Unsaturation.Saturated)
             {
                 _carbonHeap[_heapSize] = _carbon;
+                int _index = _heapSize;
                 _heapSize++;
-                //TODO Heap Up
+                while (_index > 0)
+                {
+                    Carbon _parent = _carbonHeap[(_index - 1) / 2];
+                    if (_carbonHeap[_index].LinearCompare(_parent) > 0)
+                    {
+                        _carbonHeap[(_index - 1) / 2] = _carbonHeap[_index];
+                        _carbonHeap[_index] = _parent;
+                        _index = (_index - 1) / 2; 
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
             }
         }
+
+        
 
         while (_heapSize > 0)
         {
             Carbon _prioCarbon = _carbonHeap[0];
-            //TODO reheap down
+            _heapSize--;
+            _carbonHeap[0] = _carbonHeap[_heapSize];
+
+            //if heapSize 2 or more, reheap down
+            if (_heapSize > 1)
+            {
+                //reheap down
+                while (true)
+                {
+                    int _index = 0;
+                    int _left = 2 * _index + 1, _right = 2 * _index + 2;
+                    int _prioChild = _left;
+                    if (_left < _heapSize)
+                    {
+                        if (_right < _heapSize && _carbonHeap[_right].LinearCompare(_carbonHeap[_index]) > 0)
+                        {
+                            if (_carbonHeap[_right].LinearCompare(_carbonHeap[_left]) > 0)
+                            {
+                                _prioChild = _right;
+                            }
+                        }
+                        if (_carbonHeap[_prioChild].LinearCompare(_carbonHeap[_index]) > 0)
+                        {
+                            Carbon _temp = _carbonHeap[_index];
+                            _carbonHeap[_index] = _carbonHeap[_prioChild];
+                            _carbonHeap[_prioChild] = _temp;
+                            _index = _prioChild;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
             int _numFromBeginning = main.chain[0].PathTo(_prioCarbon, null).Count, _numFromEnd = main.chain[main.chain.Count - 1].PathTo(_prioCarbon, null).Count;
             if (_numFromBeginning < _numFromEnd)
             {

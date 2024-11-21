@@ -50,7 +50,7 @@ public class MainCandidate
                 {
                     if (k >= unsaturation.Count && k >= _other.unsaturation.Count)
                     {
-                        return 0;
+                        return chain.Count - _other.chain.Count;
                     }
                     else if (k >= unsaturation.Count)
                     {

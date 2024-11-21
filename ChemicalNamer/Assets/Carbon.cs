@@ -49,25 +49,33 @@ public class Carbon : Atom
     }
 
     //Cyclical Evaluate
-    public void Evaluate(List<Carbon> _chain)
+    public void Evaluate(List<Carbon> _chain = null)
     {
         ResetValues();
         functionalGroups = new List<FunctionalGroup>();
         List<CovalentBond> _oxygens = new();
+        int _numCarbons = 0;
         foreach (CovalentBond _bond in bondedAtoms)
         {
             Atom _other = _bond.GetOtherAtom(this);
             if (_other.GetType() == typeof(Carbon))
             {
-                if (_chain.Contains((Carbon)_other))
+                _numCarbons++;
+                if (_chain != null && _chain.Contains((Carbon)_other))
                 {
                     if (_bond.BondTier - 1 > (int)unsaturation - 1)
                     {
                         unsaturation = (Unsaturation)(_bond.BondTier - 1);
                     }
                     continue;
-                }                
-                /*TODO: Get Carbon Functional Groups*/
+                }
+                else
+                {
+                    if (_numCarbons > 2)
+                    {
+                        functionalGroups.Add(FunctionalGroup.Alkanyl);
+                    }
+                }
             }
             else if (_other.GetType() == typeof(Oxygen))
             {
@@ -87,12 +95,13 @@ public class Carbon : Atom
     }
 
     //Linear Evaluate
+    /*
     public void Evaluate()
     {
         ResetValues();
         functionalGroups = new List<FunctionalGroup>();
         List<CovalentBond> _oxygens = new();
-        int _numCarbons = 0;
+        
         foreach (CovalentBond _bond in bondedAtoms)
         {
             Atom _other = _bond.GetOtherAtom(this);
@@ -102,12 +111,7 @@ public class Carbon : Atom
                 {
                     unsaturation = (Unsaturation)(_bond.BondTier - 1);
                 }
-                /*TODO: Think about side chains*/
-                _numCarbons++;
-                if (_numCarbons > 2)
-                {
-                    functionalGroups.Add(FunctionalGroup.Alkanyl);
-                }                
+                                
             }
             else if (_other.GetType() == typeof(Oxygen))
             {
@@ -125,6 +129,7 @@ public class Carbon : Atom
         functionalGroups.Sort();
         functionalGroups.Reverse();
     }
+    */
 
     private void GetOxygenFunctionalGroups(List<CovalentBond> _oxygens)
     {
