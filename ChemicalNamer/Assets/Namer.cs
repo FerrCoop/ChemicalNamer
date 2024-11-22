@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -157,7 +158,27 @@ public class Namer : MonoBehaviour
             else
             {
                 //TODO: Multi functional methane
-                Output("Damn complicated methane that is");
+                _endCarbons[0].functionalGroups.Sort();
+                Dictionary<string, int> _funcDict = new Dictionary<string, int>();
+                for (int i = 1; i < _endCarbons[0].functionalGroups.Count; i++)
+                {
+                    if (_funcDict.ContainsKey(FUNCTIONAL_PREFIXES[(int)_endCarbons[0].functionalGroups[i]]))
+                    {
+                        _funcDict[FUNCTIONAL_PREFIXES[(int)_endCarbons[0].functionalGroups[i]]]++;
+                    }
+                    else
+                    {
+                        _funcDict.Add(FUNCTIONAL_PREFIXES[(int)_endCarbons[0].functionalGroups[i]], 1);
+                    }
+                }
+                string _prefixes = "";
+                List<string> _sortedKeys = _funcDict.Keys.ToList<string>();
+                _sortedKeys.Sort();
+                foreach (string _string in _sortedKeys)
+                {
+                    _prefixes += NUMERICAL_PREFIXES[_funcDict[_string] - 1] + _string + "-";
+                }
+                Output(_prefixes + "Methan" + FUNCTIONAL_GROUP_ENDINGS[(int)_endCarbons[0].functionalGroups[0]]);
             }
             return;
         }
