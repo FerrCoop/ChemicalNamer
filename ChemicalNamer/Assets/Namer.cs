@@ -1,6 +1,5 @@
-using JetBrains.Annotations;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -8,14 +7,19 @@ public class Namer : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI nameTextObject;
 
-    public string[] STANDARD_PREFIXES = {"Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca"};
+    public string[] STANDARD_PREFIXES = { "Meth", "Eth", "Prop", "But", "Pent", "Hex", "Hept", "Oct", "Non", "Deca", "Hendeca", "Dodeca" };
     public string[] NUMERICAL_PREFIXES = { "", "di", "tri", "quadra", "pent", "hex", "hept", "oct", "non", "deca", "hendeca", "dodeca" };
+    public string[] FUNCTIONAL_PREFIXES = { "Carboxyl", "Formyl", "Oxo", "Hydroxyl", "Amino"};
+    public string[] FUNCTIONAL_GROUP_ENDINGS = { "oic Acid", "al", "one", "ol", "amine"};
     public const string ALKANE_SUFFIX = "an", ALKENE_SUFFIX = "en", ALKYNE_SUFFIX = "yn";
     const string AMINO_SUFFIX = "amine", AMINO_PREFIX = "amino";
+
+    bool errorThrown = false;
 
     //initial function, directs to HandleCyclo or HandleLinear
     public void TryNameCompound()
     {
+        errorThrown = false;
         Atom _origin = FindAnyObjectByType<Atom>();
 
         if (_origin == null)
@@ -42,11 +46,22 @@ public class Namer : MonoBehaviour
         if (_cyclical != null)
         {
             Ring _ring = new Ring(GetRing(_compoundAtoms, _cyclical), this);
+            foreach (Atom _atom in _compoundAtoms)
+            {
+                if(_atom.GetType() == typeof(Carbon))
+                {
+                    Carbon _carbon = (Carbon)_atom;
+                    if(_carbon.GetConnectedCarbons().Count == 1)
+                    {
+                        _ring.AddSideChain(_carbon.PathTo(_ring.ring, null));
+                    }
+                }
+            }
             _ring.Evaluate();
         }
         else
         {
-            HandleLinearCompound();
+            HandleLinearCompound(_compoundAtoms);
         } 
     }
     
@@ -110,23 +125,115 @@ public class Namer : MonoBehaviour
     }
 
     //TODO: Implement Later
-    private void HandleLinearCompound()
+    private void HandleLinearCompound(HashSet<Atom> _atoms)
     {
         //noncyclical: next step is find any functional groups
-        //try find carboxyl
-        //try find aldehyde
-        //try find ketone
-        //try find hydroxyl
-        //try find amino
+        //get highest prio chain
+        //make sure it and substituent chains less than 12 carbons
+        //number chains
+        //name main chain
 
-        //no functional groups
-        //get unsaturation
+        List<Carbon> _endCarbons = new List<Carbon>();
+        
+        foreach(Atom _atom in _atoms)
+        {
+            if (_atom.GetType() != typeof(Carbon))
+            {
+                continue;
+            }
+            Carbon _carbon = (Carbon)_atom;
+            _carbon.Evaluate();
 
-        //get functional groups
-        //get unsaturation
-        //get longest carbon chain
-        //get end carbons, find path from each end carbon to each other end carbon, choose longest
-        Output(new InvalidChemicalException("Sorry, that chemical is too complicated"));
+            if(_carbon.GetConnectedCarbons().Count <= 1)
+            {
+                _endCarbons.Add(_carbon);
+            }
+        }
+
+        if (_endCarbons.Count == 0)
+        {
+            Output(new InvalidChemicalException("No carbons in compound!"));
+            return;
+        }    
+
+        if(_endCarbons.Count == 1)
+        {
+            if (_endCarbons[0].functionalGroups.Count == 0)
+            {
+                Output("Methane");
+            }
+            else if (_endCarbons[0].functionalGroups.Count == 1)
+            {
+                Output("Methan" + FUNCTIONAL_GROUP_ENDINGS[(int)_endCarbons[0].functionalGroups[0]]);
+            }
+            else
+            {
+                //TODO: Multi functional methane
+                _endCarbons[0].functionalGroups.Sort();
+                Dictionary<string, int> _funcDict = new Dictionary<string, int>();
+                for (int i = 1; i < _endCarbons[0].functionalGroups.Count; i++)
+                {
+                    if (_funcDict.ContainsKey(FUNCTIONAL_PREFIXES[(int)_endCarbons[0].functionalGroups[i]]))
+                    {
+                        _funcDict[FUNCTIONAL_PREFIXES[(int)_endCarbons[0].functionalGroups[i]]]++;
+                    }
+                    else
+                    {
+                        _funcDict.Add(FUNCTIONAL_PREFIXES[(int)_endCarbons[0].functionalGroups[i]], 1);
+                    }
+                }
+                string _prefixes = "";
+                List<string> _sortedKeys = _funcDict.Keys.ToList<string>();
+                _sortedKeys.Sort();
+                foreach (string _string in _sortedKeys)
+                {
+                    _prefixes += NUMERICAL_PREFIXES[_funcDict[_string] - 1] + _string + "-";
+                }
+                Output(_prefixes + "Methan" + FUNCTIONAL_GROUP_ENDINGS[(int)_endCarbons[0].functionalGroups[0]]);
+            }
+            return;
+        }
+
+        MainCandidate[] _candidates = new MainCandidate[GetCombinations(_endCarbons.Count)];
+        int _combinations = 0;
+        for (int i = 0; i < _endCarbons.Count; i++)
+        {
+            for (int k = i + 1; k < _endCarbons.Count; k++)
+            {
+                //add new combination _endCarbons[i], _endCarbons[k]
+                _candidates[_combinations] = new MainCandidate(_endCarbons[i], _endCarbons[k]);
+                _combinations++;
+
+                //TODO: sort up
+                int _index = _combinations - 1;
+                while (_index > 0)
+                {
+                    MainCandidate _parent = _candidates[(_index - 1) / 2];
+                    if (_candidates[_index].CompareTo(_parent) > 0)
+                    {
+                        _candidates[(_index - 1) / 2] = _candidates[_index];
+                        _candidates[_index] = _parent;
+                        _index = (_index - 1) / 2;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        List<Carbon> _mainChain = _candidates[0].chain;
+        LinearCompound _compound = new LinearCompound(_candidates[0], this);
+        _endCarbons.Remove(_mainChain[0]);
+        _endCarbons.Remove(_mainChain[_mainChain.Count - 1]);
+
+        foreach (Carbon _carbon in _endCarbons)
+        {
+            //path from each end to a carbon in main
+            _compound.AddSidechain(_carbon.PathTo(_mainChain, null));
+        }
+
+        _compound.Evaluate();
     }
 
     //Recursively Add Atoms
@@ -165,6 +272,10 @@ public class Namer : MonoBehaviour
     //Output a chemical name
     public void Output(string _name)
     {
+        if (errorThrown)
+        {
+            return;
+        }
         nameTextObject.color = Color.white;
         nameTextObject.text = _name;
     }
@@ -174,6 +285,7 @@ public class Namer : MonoBehaviour
     {
         nameTextObject.color = Color.red;
         nameTextObject.text = _invalidException.reason;
+        errorThrown = true;
     }
 
     //take a bunch of indexes and convert to a string
@@ -205,6 +317,18 @@ public class Namer : MonoBehaviour
                 FunctionalGroupSortUp(_sortedCarbons, (_index - 1) / 2, _cyclo);
             }
         }
+    }
+
+    public static int GetCombinations(int _num)
+    {
+        int _combinations = 0;
+        _num--;
+        while (_num > 0)
+        {    
+            _combinations += _num;
+            _num--;
+        }
+        return _combinations;
     }
 }
 

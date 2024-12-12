@@ -6,11 +6,12 @@ using UnityEngine;
 
 public class Ring
 {
-    private List<Carbon> ring;
+    public List<Carbon> ring;
     private List<Carbon> hydroxyls;
     private HashSet<CovalentBond> doubleBonds;
     private HashSet<CovalentBond> tripleBonds;
     private Namer namer;
+    private List<List<Carbon>> sideChains;
 
     public Ring(List<Carbon> _carbons, Namer _namer)
     {
@@ -18,7 +19,19 @@ public class Ring
         doubleBonds = new HashSet<CovalentBond>();
         tripleBonds = new HashSet<CovalentBond>();
         hydroxyls = new List<Carbon>();
+        sideChains = new List<List<Carbon>>();
         namer = _namer;
+    }
+
+    public void AddSideChain(List<Carbon> _sidechain)
+    {
+        if (_sidechain == null)
+        {
+            Debug.LogError("Null Sidechain Added");
+            return;
+        }
+        Debug.Log("Sidechain length: " + _sidechain.Count);
+        sideChains.Add(_sidechain);
     }
 
     public void Evaluate()
@@ -38,7 +51,6 @@ public class Ring
         //reset and evaluate carbons
         foreach (Carbon _carbon in ring)
         {
-            _carbon.ResetValues();
             _carbon.Evaluate(ring);
 
             //Get Unsaturation
@@ -61,7 +73,7 @@ public class Ring
             }
         }
         NumberRing();
-        namer.Output(GetFunctionalGroups(ring) + "Cyclo" + namer.STANDARD_PREFIXES[ring.Count - 1] + GetCycloCompoundBody(ring));
+        namer.Output(NamePrefixes(ring) + "Cyclo" + namer.STANDARD_PREFIXES[ring.Count - 1] + GetCycloCompoundBody(ring));
     }
 
     private void NumberRing()
@@ -124,14 +136,14 @@ public class Ring
             {
                 _carbonA.SetChainNumber(1);
                 _carbonB.SetChainNumber(2);
-                FinishRing(_carbonB, 2);
+                FinishRing(_carbonB, 3);
 
             }
             else if (_compared < 0)
             {
                 _carbonB.SetChainNumber(1);
                 _carbonA.SetChainNumber(2);
-                FinishRing(_carbonA, 2);
+                FinishRing(_carbonA, 3);
             }
             else
             {
@@ -166,12 +178,66 @@ public class Ring
     }
 
     //TODO
-    private string GetFunctionalGroups(List<Carbon> _ring)
+    private string NamePrefixes(List<Carbon> _ring)
     {
-        string _body = "";
-        //remember this is alphabetized 
-        //do stuff
-        return _body;
+        Dictionary<Carbon.FunctionalGroup, List<Carbon>> _functionalGroups = new();
+
+        foreach (Carbon _carbon in ring)
+        {
+            foreach (Carbon.FunctionalGroup _funcGroup in _carbon.functionalGroups)
+            {
+                if (_funcGroup != Carbon.FunctionalGroup.Hydroxyl)
+                {
+                    if(!_functionalGroups.ContainsKey(_funcGroup))
+                    {
+                        _functionalGroups[_funcGroup] = new();
+                    }
+                    _functionalGroups[_funcGroup].Add(_carbon);
+                }
+            }
+        }
+
+        Dictionary<string, string> _alphabatizer = new Dictionary<string, string>();
+        foreach (Carbon.FunctionalGroup _group in _functionalGroups.Keys)
+        {
+            if (_group != Carbon.FunctionalGroup.Alkanyl)
+            {
+                List<int> _indexes = new List<int>();
+                foreach (Carbon _carbon in ring)
+                {
+                    _indexes.Add(_carbon.ChainNumber);
+                }
+                _alphabatizer.Add(namer.FUNCTIONAL_PREFIXES[(int)_group], Namer.IntListToString(_indexes) + namer.NUMERICAL_PREFIXES[_indexes.Count - 1] + namer.FUNCTIONAL_PREFIXES[(int)_group]);
+            }
+            else
+            {
+                Dictionary<string, List<int>> _alkanylDict = new Dictionary<string, List<int>>();
+                foreach (List<Carbon> _sidechain in sideChains)
+                {
+                    string _name = LinearCompound.NameSidechain(_sidechain, _sidechain[_sidechain.Count - 1], _sidechain[0], namer);
+                    if (_alkanylDict.ContainsKey(_name))
+                    {
+                        _alkanylDict[_name].Add(_sidechain[0].ChainNumber);
+                    }
+                    else
+                    {
+                        _alkanylDict.Add(_name, new List<int> { _sidechain[0].ChainNumber });
+                    }
+                }
+                foreach (string s in _alkanylDict.Keys)
+                {
+                    _alphabatizer.Add(s, Namer.IntListToString(_alkanylDict[s]) + namer.NUMERICAL_PREFIXES[_alkanylDict[s].Count - 1] + s);
+                }
+            }
+        }
+        string _prefixes = "";
+        List<string> keys = _alphabatizer.Keys.ToList<string>();
+        keys.Sort();
+        foreach (string _key in keys)
+        {
+            _prefixes += _alphabatizer[_key] + "-";
+        }
+        return _prefixes;
     }
 
     //return cyclo-ringCount-unsaturation-e/ol
