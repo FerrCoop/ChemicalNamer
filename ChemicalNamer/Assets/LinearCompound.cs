@@ -102,7 +102,7 @@ public class LinearCompound
                 while (_index > 0)
                 {
                     Carbon _parent = _carbonHeap[(_index - 1) / 2];
-                    if (_carbonHeap[_index].LinearCompare(_parent) > 0)
+                    if (_carbonHeap[_index].LinearCompare(_parent, main.chain[0], main.chain[main.chain.Count - 1]) > 0)
                     {
                         _carbonHeap[(_index - 1) / 2] = _carbonHeap[_index];
                         _carbonHeap[_index] = _parent;
@@ -135,14 +135,14 @@ public class LinearCompound
                     int _prioChild = _left;
                     if (_left < _heapSize)
                     {
-                        if (_right < _heapSize && _carbonHeap[_right].LinearCompare(_carbonHeap[_index]) > 0)
+                        if (_right < _heapSize && _carbonHeap[_right].LinearCompare(_carbonHeap[_index], main.chain[0], main.chain[main.chain.Count - 1]) > 0)
                         {
-                            if (_carbonHeap[_right].LinearCompare(_carbonHeap[_left]) > 0)
+                            if (_carbonHeap[_right].LinearCompare(_carbonHeap[_left], main.chain[0], main.chain[main.chain.Count - 1]) > 0)
                             {
                                 _prioChild = _right;
                             }
                         }
-                        if (_carbonHeap[_prioChild].LinearCompare(_carbonHeap[_index]) > 0)
+                        if (_carbonHeap[_prioChild].LinearCompare(_carbonHeap[_index], main.chain[0], main.chain[main.chain.Count - 1]) > 0)
                         {
                             Carbon _temp = _carbonHeap[_index];
                             _carbonHeap[_index] = _carbonHeap[_prioChild];

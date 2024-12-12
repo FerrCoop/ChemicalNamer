@@ -49,7 +49,7 @@ public class Carbon : Atom
     }
 
     //Cyclical Evaluate
-    public void Evaluate(List<Carbon> _chain = null)
+    public void Evaluate(List<Carbon> _chain = null, Ring _ring = null)
     {
         ResetValues();
         functionalGroups = new List<FunctionalGroup>();
@@ -269,7 +269,7 @@ public class Carbon : Atom
         return 0;
     }
 
-    public int LinearCompare(Carbon _other)
+    public int LinearCompare(Carbon _other, Carbon _endA, Carbon _endB)
     {
         int _funcCompare = CompareFunctionalGroups(_other);
         if (_funcCompare != 0)
@@ -280,8 +280,19 @@ public class Carbon : Atom
         {
             return (int)unsaturation - (int)_other.unsaturation;
         }
-        //TODO: next carbons
-        return 0;
+        int _nearestEnd = PathTo(_endA, null).Count;
+        int _otherEnd = PathTo(_endB, null).Count;
+        if (_otherEnd < _nearestEnd)
+        {
+            _nearestEnd = _otherEnd;
+        }
+        int _otherNearestEnd = _other.PathTo(_endA, null).Count;
+        int _otherOtherEnd = _other.PathTo(_endB, null).Count;
+        if (_otherOtherEnd < _otherNearestEnd)
+        {
+            _otherNearestEnd = _otherOtherEnd;
+        }
+        return -_nearestEnd + _otherNearestEnd;
     }
 
     public List<Carbon> PathTo(Carbon _target, Carbon _previous)

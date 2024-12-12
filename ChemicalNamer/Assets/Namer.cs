@@ -46,6 +46,17 @@ public class Namer : MonoBehaviour
         if (_cyclical != null)
         {
             Ring _ring = new Ring(GetRing(_compoundAtoms, _cyclical), this);
+            foreach (Atom _atom in _compoundAtoms)
+            {
+                if(_atom.GetType() == typeof(Carbon))
+                {
+                    Carbon _carbon = (Carbon)_atom;
+                    if(_carbon.GetConnectedCarbons().Count == 1)
+                    {
+                        _ring.AddSideChain(_carbon.PathTo(_ring.ring, null));
+                    }
+                }
+            }
             _ring.Evaluate();
         }
         else
@@ -192,6 +203,7 @@ public class Namer : MonoBehaviour
                 //add new combination _endCarbons[i], _endCarbons[k]
                 _candidates[_combinations] = new MainCandidate(_endCarbons[i], _endCarbons[k]);
                 _combinations++;
+
                 //TODO: sort up
                 int _index = _combinations - 1;
                 while (_index > 0)
