@@ -31,6 +31,14 @@ public class Ring
             return;
         }
         Debug.Log("Sidechain length: " + _sidechain.Count);
+        foreach (Carbon _carbon in _sidechain)
+        {
+            if (ring.Contains(_carbon))
+            {
+                continue;
+            }
+            _carbon.Evaluate();
+        }
         sideChains.Add(_sidechain);
     }
 
@@ -114,7 +122,7 @@ public class Ring
             //finish the ring, numbering as we go
             FinishRing(_currentCarbon, 3);            
         }
-        else if (doubleBonds.Count + tripleBonds.Count == 1)
+        else if (doubleBonds.Count == 1 || doubleBonds.Count + tripleBonds.Count == 1)
         {
             CovalentBond _bond;
 
@@ -171,10 +179,88 @@ public class Ring
         }
         else
         {
+            //more than one double bond or more than one triple bond with 0 double bonds
+            //number by functional groups
+            Carbon[] _sortedCarbons = new Carbon[ring.Count];
+
+            //reset each carbon's number, add to heap and sort up
+            for (int i = 0; i < ring.Count; i++)
+            {
+                _sortedCarbons[i] = ring[i];
+                Namer.FunctionalGroupSortUp(_sortedCarbons, i, true);
+            }
+
+            //Get Carbon 1
+            Carbon _prioCarbon = _sortedCarbons[0];
+            Dictionary<int, List<Carbon>> _scoredArrangements = new Dictionary<int, List<Carbon>>();
+            List<CovalentBond> _allBonds = new List<CovalentBond>();
+            _allBonds.AddRange(doubleBonds);
+            _allBonds.AddRange(tripleBonds);
+            foreach (CovalentBond _bond in _allBonds)
+            {
+                Carbon _atomA = (Carbon)_bond.AtomA, _atomB = (Carbon)_bond.AtomB;
+                _atomA.SetChainNumber(1);
+                _atomB.SetChainNumber(2);
+                FinishRing(_atomB, 3);
+                int _score = ScoreRing(_prioCarbon);
+                if(_scoredArrangements.ContainsKey(_score))
+                {
+                    _scoredArrangements[_score].Add(_atomA);
+                }
+                else
+                {
+                    _scoredArrangements.Add(_score, new List<Carbon> { _atomA});
+                }
+                //score
+                //add to dict
+                foreach (Carbon _carbon in ring)
+                {
+                    _carbon.SetChainNumber(0);
+                }
+                _atomB.SetChainNumber(1);
+                _atomA.SetChainNumber(2);
+                FinishRing(_atomA, 3);
+                int _score2 = ScoreRing(_prioCarbon);
+                if (_scoredArrangements.ContainsKey(_score2))
+                {
+                    _scoredArrangements[_score2].Add(_atomB);
+                }
+                else
+                {
+                    _scoredArrangements.Add(_score2, new List<Carbon> { _atomB });
+                }
+                foreach (Carbon _carbon in ring)
+                {
+                    _carbon.SetChainNumber(0);
+                }
+                //clear
+            }
+
+            List<int> _keys = _scoredArrangements.Keys.ToList();
+            _keys.Sort();
+            _scoredArrangements[_keys[0]][0].SetChainNumber(1);
+            Carbon _other = (Carbon)_scoredArrangements[_keys[0]][0].GetUnsaturatedBond().GetOtherAtom(_scoredArrangements[_keys[0]][0]);
+            _other.SetChainNumber(2);
+            FinishRing(_other, 3);
             //determine highest priority carbon
             //get all the bonds in the ring
             //
         }
+    }
+
+    private int ScoreRing(Carbon _prioCarbon)
+    {
+        int _score = 0;
+        _score += _prioCarbon.ChainNumber;
+        foreach (CovalentBond _bond in doubleBonds)
+        {
+            _score += _bond.GetLowerAtomIndex();
+        }
+        foreach (CovalentBond _bond in tripleBonds)
+        {
+            _score += _bond.GetLowerAtomIndex();
+        }
+        return _score;
     }
 
     //TODO
