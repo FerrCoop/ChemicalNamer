@@ -7,7 +7,8 @@ public class Carbon : Atom
 {
     public int ChainNumber {get; private set;}
 
-    public override int MAX_BONDS { get { return 4; } }   
+    public override int MAX_BONDS { get { return 4; } }
+    public override char ABBREVIATION { get { return 'C'; } }
 
     public List<FunctionalGroup> functionalGroups;
     public Unsaturation unsaturation;

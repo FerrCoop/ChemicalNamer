@@ -61,6 +61,8 @@ public class CovalentBond: MonoBehaviour
         {
             AtomA.TryRemoveConnection(AtomB);
         }
+        AtomA.ShowHydrogens();
+        AtomB.ShowHydrogens();
     }
 
     public void IncrementBondLevel()
@@ -70,6 +72,8 @@ public class CovalentBond: MonoBehaviour
         {
             BondTier = 1;
         }
+        AtomA.ShowHydrogens();
+        AtomB.ShowHydrogens();
     }
 
     public Atom GetOtherAtom(Atom _atom)

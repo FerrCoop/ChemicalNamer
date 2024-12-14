@@ -5,4 +5,5 @@ using UnityEngine;
 public class Nitrogen : Atom
 {
     public override int MAX_BONDS { get { return 3; } }
+    public override char ABBREVIATION { get { return 'N'; } }
 }
